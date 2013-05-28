@@ -66,6 +66,26 @@ void sr_init(struct sr_instance* sr)
  *
  *---------------------------------------------------------------------*/
 
+int isAddrEqual(const uint8_t *addr1, const uint8_t *addr2)
+{
+  int i;
+  for(i = 0; i != ETHER_ADDR_LEN; i++)
+  {
+    if (*addr1 != *addr2)
+      return 0;
+    ++addr1;
+    ++addr2;
+  }
+  return 1;
+}
+/*to be implement*/
+void handleArpPacket(struct sr_instance* sr, sr_arp_hdr_t* arp_hdr, 
+                        unsigned int len, struct sr_if *iface, int is_broadcast)
+{}
+void handleIpPacket(struct sr_instance* sr, sr_ip_hdr_t* ip_hdr, 
+                        unsigned int len, struct sr_if *iface)
+{}
+
 void sr_handlepacket(struct sr_instance* sr,
         uint8_t * packet/* lent */,
         unsigned int len,
@@ -79,6 +99,38 @@ void sr_handlepacket(struct sr_instance* sr,
   printf("*** -> Received packet of length %d \n",len);
 
   /* fill in code here */
+  print_hdrs(packet, len);
+  sr_ethernet_hdr_t* ether_hdr = (sr_ethernet_hdr_t*) packet;
+  if(len < sizeof(sr_ethernet_hdr_t)) {
+    fprintf(stderr, "Dropped, too short as ethernet frame\n");
+    return;
+  }
 
+  struct sr_if* iface = sr_get_interface(sr, interface);
+  if(ethertype(packet) == ethertype_arp) 
+  {
+    uint8_t bc[ETHER_ADDR_LEN]  = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+    int is_broadcast = isAddrEqual(ether_hdr->ether_dhost,bc);
+    if(isAddrEqual(ether_hdr->ether_dhost,iface->addr) || is_broadcast) 
+    {
+        handleArpPacket(sr, (sr_arp_hdr_t* )(packet+sizeof(sr_ethernet_hdr_t)), 
+                        len-sizeof(sr_ethernet_hdr_t), iface, is_broadcast);
+    }
+    else
+    {
+      fprintf(stderr, "Dropped, distance address is not recognized");
+      return;
+    }
+  }
+  else if(ethertype(packet) == ethertype_ip)
+  {
+    if(isAddrEqual(ether_hdr->ether_dhost, iface->addr))
+      handleIpPacket(sr, (sr_ip_hdr_t* )(packet+sizeof(sr_ethernet_hdr_t)),
+                      len-sizeof(sr_ethernet_hdr_t), iface);
+    else
+      return;
+  }
+  else
+    fprintf(stderr, "Dropped, wrong entertype");
 }/* end sr_ForwardPacket */
 

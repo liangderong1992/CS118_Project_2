@@ -79,9 +79,55 @@ int isAddrEqual(const uint8_t *addr1, const uint8_t *addr2)
   return 1;
 }
 /*to be implement*/
+
+uint8_t* newArpPacket(unsigned short op, unsigned char *sha, uint32_t sip, unsigned char *tha, uint32_t tip)
+{
+  unsigned int = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+  uint8_t* packet = malloc(len);
+  sr_ethernet_hdr_t* e_hdr = (sr_ethernet_hdr_t*) packet;
+  sr_arp_hdr_t* a_hdr = (sr_arp_hdr_t*) (packet+sizeof(sr_ethernet_hdr_t));
+  memcpy(e_hdr->ether_dhost, tha, ETHER_ADDR_LEN);
+  memcpy(e_hdr->ether_shost, sha, ETHER_ADDR_LEN);
+  e_hdr->ether_type = htons(ethertype_arp);
+
+  a_hdr->ar_hrd = htons(arp_hrd_ethernet);
+  a_hdr->ar_pro = htons(ethertype_ip);
+  a_hdr->ar_hln = ETHER_ADDR_LEN;
+  a_hdr->ar_pln = IP_ADDR_LEN;
+  a_hdr->ar_op = htons(op);
+  memcpy(a_hdr->sha, sha, ETHER_ADDR_LEN);
+  a_hdr->ar_sip = sip;
+  memcpy(a_hdr->tha, tha, ETHER_ADDR_LEN);
+  a_hdr->tip = tip;
+
+  return packet;
+}
+
 void handleArpPacket(struct sr_instance* sr, sr_arp_hdr_t* arp_hdr, 
                         unsigned int len, struct sr_if *iface, int is_broadcast)
-{}
+{
+  if (arp_hdr->ar_hrd != arp_hrd_ethernet || arp_hdr->ar_pro != ethertype_ip)
+  {
+    fprintf(stderr, "Hardware type or Protocol type error.")
+    return;
+  }
+
+  if(arp_hdr->op == 1)
+  {
+    unsigned int reply_len = sizeof(sr_ethernet_hdr_t)+sizeof(sr_arp_hdr_t);
+    uint8_t* reply_pkt = newArpPacket(arp_op_reply, iface->addr, iface->ip, arp_hdr->ar_sha, arp_hdr->ar_sip);
+    sr_send_packet(sr,reply_pkt,reply_len, iface->name);
+    free(reply_pkt);
+  }
+  else
+  {
+    if(is_broadcast)
+    {
+        fprintf(stderr, "Wrong operation.")
+        return;
+    }
+  }
+}
 void handleIpPacket(struct sr_instance* sr, sr_ip_hdr_t* ip_hdr, 
                         unsigned int len, struct sr_if *iface)
 {}

@@ -106,18 +106,19 @@ uint8_t* newArpPacket(unsigned short op, unsigned char *sha, uint32_t sip, unsig
 void handleArpPacket(struct sr_instance* sr, sr_arp_hdr_t* arp_hdr, 
                         unsigned int len, struct sr_if *iface, int is_broadcast)
 {
-  if (arp_hdr->ar_hrd != arp_hrd_ethernet || arp_hdr->ar_pro != ethertype_ip)
+  if (arp_hdr->ar_hrd != htons(arp_hrd_ethernet) || arp_hdr->ar_pro != htons(ethertype_ip))
   {
     fprintf(stderr, "Hardware type or Protocol type error.");
   }
 
-  if(arp_hdr->ar_op == 1 && is_broadcast)
+  if(arp_hdr->ar_op == htons(arp_op_request) && is_broadcast)
   {
     unsigned int reply_len = sizeof(sr_ethernet_hdr_t)+sizeof(sr_arp_hdr_t);
     for(;iface!=NULL;iface=iface->next)
     {
       if(iface->ip == arp_hdr->ar_tip)
       {
+        print_addr_ip_int(iface->ip);
         uint8_t* reply_pkt = newArpPacket(arp_op_reply, iface->addr, iface->ip, arp_hdr->ar_sha, arp_hdr->ar_sip);
         sr_send_packet(sr,reply_pkt,reply_len, iface->name);
         /*free(reply_pkt);*/
@@ -161,14 +162,14 @@ void sr_handlepacket(struct sr_instance* sr,
   {
     uint8_t bc[ETHER_ADDR_LEN]  = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
     int is_broadcast = isAddrEqual(ether_hdr->ether_dhost,bc);
-    if(isAddrEqual(ether_hdr->ether_dhost,iface->addr) || is_broadcast) 
+    if(/*isAddrEqual(ether_hdr->ether_dhost,iface->addr) || */is_broadcast) 
     {
         handleArpPacket(sr, (sr_arp_hdr_t* )(packet+sizeof(sr_ethernet_hdr_t)), 
                         len-sizeof(sr_ethernet_hdr_t), iface, is_broadcast);
     }
     else
     {
-      fprintf(stderr, "Dropped, distance address is not recognized");
+      fprintf(stderr, "Dropped, destination address is not recognized");
       return;
     }
   }

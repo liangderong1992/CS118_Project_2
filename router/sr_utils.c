@@ -67,7 +67,7 @@ uint8_t* newHUICMPPackt(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigned
   return packet;
 }
 
-(struct sr_if)* matchPrefix(struct sr_instance* sr, uint32_t ip)
+struct sr_if* matchPrefix(struct sr_instance* sr, uint32_t ip)
 {
   struct sr_rt* rt = sr->routing_table;
   while(rt->next != NULL)

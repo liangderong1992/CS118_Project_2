@@ -31,7 +31,7 @@ uint8_t* newArpPacket(unsigned short op, unsigned char *sha, uint32_t sip, unsig
   return packet;
 }
 
-uint8_t* newHUICMPPackt(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigned char *tha, uint32_t tip)
+uint8_t* newHUICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigned char *tha, uint32_t tip)
 {
   unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t) + sizeof(uint32_t);
   uint8_t* packet = malloc(len);
@@ -62,7 +62,7 @@ uint8_t* newHUICMPPackt(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigned
   icmp_hdr->unused = 0;
   icmp_hdr->next_mtu = 0;
   memcpy(icmp_hdr->data, pkt+sizeof(sr_ethernet_hdr_t), ICMP_DATA_SIZE);
-  icmp_hdr->icmp_sum = checksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
+  icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
   printf("checksum %d\n", icmp_hdr->icmp_sum);
   return packet;
 }

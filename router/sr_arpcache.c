@@ -9,7 +9,64 @@
 #include "sr_arpcache.h"
 #include "sr_router.h"
 #include "sr_if.h"
+#include "sr_utils.h"
 #include "sr_protocol.h"
+
+
+struct ip_list {
+    uint32_t ip;
+    struct ip_list *next;
+};
+
+void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
+{
+    time_t now = time(NULL);
+    if(difftime(now, req->sent) > 1.0)
+    {
+        if(req->times_sent >= 5)
+        {
+            struct sr_packet *p = req->packets;
+            struct ip_list *ip = malloc(sizeof(struct ip_list));
+            packet_node: 
+            while(p != NULL)
+            {
+                sr_ethernet_hdr_t* e_hdr = (sr_ethernet_hdr_t*) p;
+                sr_ip_hdr_t* ip_hdr = (sr_ip_hdr_t*) (p+sizeof(sr_ethernet_hdr_t));
+                struct ip_list *ipt = ip;
+                while(ipt != NULL)
+                {
+                    if(ipt->ip == ip_hdr->ip_src)
+                    {
+                        p = p->next;
+                        goto packet_node;
+                    }
+                    else if(ipt->next == NULL)
+                    {
+                        ipt->next = malloc(sizeof(struct ip_list));
+                        ipt->next->ip = ip_hdr->ip_src;
+                        ipt->next->next = NULL;
+                    }
+                }
+                uint8_t *taddr = &(e_hdr->ether_shost);
+                uint32_t tip = ip_hdr->ip_src;
+                struct sr_if *iface = matchPrefix(sr, tip);
+                uint8_t *icmp_pkt = newHUICMPPacket(p->buf, iface->addr, iface->ip, taddr, tip);
+                sr_send_packet(sr, icmp_pkt, HUICMP_LENGTH, iface->name);
+            }            
+            sr_arpreq_destroy(sr, req);
+        }
+        else
+        {
+            struct sr_if *iface = matchPrefix(sr, req->ip);
+            uint8_t bc[ETHER_ADDR_LEN]  = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
+            uint8_t *req_pkt = newArpPacket(1, iface->addr, iface->ip, bc, req->ip);
+            unsigned int req_len = sizeof(sr_ethernet_hdr_t)+sizeof(sr_arp_hdr_t);
+            sr_send_packet(sr, req_pkt, req_len, iface->name);
+            req->sent = now;
+            req->times_sent++;
+        }
+    }
+}
 
 /* 
   This function gets called every second. For each request sent out, we keep
@@ -17,7 +74,21 @@
   See the comments in the header file for an idea of what it should look like.
 */
 void sr_arpcache_sweepreqs(struct sr_instance *sr) { 
-    /* Fill this in */
+    struct sr_arpreq *req = sr->cache.requests;
+    while(req != NULL)
+    {
+        if(sr_arpcache_lookup(&(sr->cache), req))
+        {
+            struct sr_arpreq *temp = req;
+            req = req->next;
+            sr_arpreq_destroy(sr, req);
+        }
+        else
+        {
+            handle_arpreq(sr, req);
+            req = req->next;
+        }
+    }
 }
 
 /* You should not need to touch the rest of this code. */

@@ -70,8 +70,9 @@
 #include <time.h>
 #include <pthread.h>
 #include "sr_if.h"
+#include "sr_utils.h"
 
-#define SR_ARPCACHE_SZ    100  
+#define SR_ARPCACHE_SZ    100
 #define SR_ARPCACHE_TO    15.0
 
 struct sr_packet {
@@ -105,6 +106,9 @@ struct sr_arpcache {
     pthread_mutex_t lock;
     pthread_mutexattr_t attr;
 };
+
+/* Handles an arp request, sending it or removing it (once per second) */
+void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req);
 
 /* Checks if an IP->MAC mapping is in the cache. IP is in network byte order. 
    You must free the returned structure if it is not NULL. */

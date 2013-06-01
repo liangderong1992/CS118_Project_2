@@ -3,7 +3,84 @@
 #include <string.h>
 #include "sr_protocol.h"
 #include "sr_utils.h"
+#include "sr_if.h"
+#include "sr_rt.h"
+#include "sr_router.h"
 
+uint8_t* newArpPacket(unsigned short op, unsigned char *sha, uint32_t sip, unsigned char *tha, uint32_t tip)
+{
+  unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t);
+  uint8_t* packet = malloc(len);
+  sr_ethernet_hdr_t* e_hdr = (sr_ethernet_hdr_t*) packet;
+  sr_arp_hdr_t* a_hdr = (sr_arp_hdr_t*) (packet+ sizeof(sr_ethernet_hdr_t));
+  memcpy(e_hdr->ether_dhost, tha, ETHER_ADDR_LEN);
+  memcpy(e_hdr->ether_shost, sha, ETHER_ADDR_LEN);
+  e_hdr->ether_type = htons(ethertype_arp);
+
+  a_hdr->ar_hrd = htons(arp_hrd_ethernet);
+  a_hdr->ar_pro = htons(ethertype_ip);
+  a_hdr->ar_hln = ETHER_ADDR_LEN;
+  a_hdr->ar_pln = 4;
+  a_hdr->ar_op = htons(op);
+  memcpy(a_hdr->ar_sha, sha, ETHER_ADDR_LEN);
+  a_hdr->ar_sip = sip;
+  memcpy(a_hdr->ar_tha, tha, ETHER_ADDR_LEN);
+  a_hdr->ar_tip = tip;
+
+
+  return packet;
+}
+
+uint8_t* newHUICMPPackt(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigned char *tha, uint32_t tip)
+{
+  unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t) + sizeof(uint32_t);
+  uint8_t* packet = malloc(len);
+  sr_ethernet_hdr_t* e_hdr = (sr_ethernet_hdr_t*) packet;
+  sr_ip_hdr_t* ip_hdr = (sr_ip_hdr_t*) (packet+ sizeof(sr_ethernet_hdr_t));
+  sr_icmp_t3_hdr_t* icmp_hdr = (sr_icmp_t3_hdr_t*) (packet+ sizeof(sr_ethernet_hdr_t)+ sizeof(sr_ip_hdr_t));
+  memcpy(e_hdr->ether_dhost, tha, ETHER_ADDR_LEN);
+  memcpy(e_hdr->ether_shost, sha, ETHER_ADDR_LEN);
+  e_hdr->ether_type = htons(ethertype_arp);
+  ip_hdr->ip_v = 4;
+  ip_hdr->ip_hl = 5;
+  ip_hdr->ip_tos=0;     /* type of service */
+  ip_hdr->ip_len=88;      /* total length */
+  ip_hdr->ip_id=0;     /* identification */
+  ip_hdr->ip_off=IP_DF;      /* fragment offset field */
+  ip_hdr->ip_ttl = 64;     /* time to live */
+  ip_hdr->ip_p = 1;     /* protocol */
+  ip_hdr->ip_sum =0;      /* checksum */
+  printf("checksum %d\n", ip_hdr->ip_sum);
+  ip_hdr->ip_src =sip; 
+  ip_hdr->ip_dst =tip;  /* source and dest address */
+  ip_hdr->ip_sum =cksum(ip_hdr,20);
+  printf("checksum %d\n", ip_hdr->ip_sum);
+
+  icmp_hdr->icmp_type=3;
+  icmp_hdr->icmp_code=1;
+  icmp_hdr->icmp_sum = 0;
+  icmp_hdr->unused = 0;
+  icmp_hdr->next_mtu = 0;
+  memcpy(icmp_hdr->data, pkt+sizeof(sr_ethernet_hdr_t), ICMP_DATA_SIZE);
+  icmp_hdr->icmp_sum = checksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
+  printf("checksum %d\n", icmp_hdr->icmp_sum);
+  return packet;
+}
+
+(struct sr_if)* matchPrefix(struct sr_instance* sr, uint32_t ip)
+{
+  struct sr_rt* rt = sr->routing_table;
+  while(rt->next != NULL)
+    {
+      if(ip == htons(rt->dest.s_addr))
+      {
+        struct sr_if* r_if = sr_get_interface(sr, rt->interface);
+        return r_if;
+      }
+      rt = rt->next;
+    }
+  return NULL;
+}
 
 uint16_t cksum (const void *_data, int len) {
   const uint8_t *data = _data;

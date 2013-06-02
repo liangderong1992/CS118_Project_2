@@ -132,6 +132,7 @@ void handleArpPacket(struct sr_instance* sr, sr_arp_hdr_t* arp_hdr,
 
           struct sr_packet* waiting_pkt = req_pointer->packets;
           memcpy(((sr_ethernet_hdr_t*)waiting_pkt->buf)->ether_dhost, arp_hdr->ar_sha, ETHER_ADDR_LEN);
+		  memcpy(((sr_ethernet_hdr_t*)waiting_pkt->buf)->ether_shost, arp_hdr->ar_tha, ETHER_ADDR_LEN);
           sr_send_packet(sr, waiting_pkt->buf, waiting_pkt->len, waiting_pkt->iface);
           req_pointer->packets = req_pointer->packets->next;
           
@@ -188,13 +189,19 @@ fprintf(stderr,"before isrouterip\n");
 		return;
     }
   }
-  else
+  else /* the dst ip isnot the router ip*/
   {
 	fprintf(stderr,"before match\n");
 	struct sr_if* interface_p = matchPrefix(sr,ip_hdr->ip_dst);
 	if(interface_p==NULL)
 	{
+		/* routing entry not found */
 		/*ToDo: send the client back a NU icmp */
+		/*
+		
+		Tototototototo dodododododo
+		
+		*/
 		fprintf(stderr,"routing match not found\n");
 		return;
 	}
@@ -208,17 +215,6 @@ fprintf(stderr,"before isrouterip\n");
 	  return;
 	  /* ToDo: send back a ICMP time exceed packet,similiar to the t3_icmp */
 
-      /*sr_icmp_hdr_t* icmp_hdr = (sr_icmp_hdr_t*) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
-      icmp_hdr->icmp_type = 0xB;
-      unsigned char* sha = e_hdr->ether_shost;
-      memcpy(e_hdr->ether_shost, e_hdr->ether_dhost, ETHER_ADDR_LEN);
-      memcpy(e_hdr->ether_dhost, sha, ETHER_ADDR_LEN);
-      for(;iface!=NULL;iface=iface->next)
-      {
-        if(iface->ip == ip_hdr->ip_dst)
-          sr_send_packet(sr,packet,len, iface->name);
-        return;
-      }*/
     }
 
 /*routhing entry found*/
@@ -238,12 +234,7 @@ fprintf(stderr,"before isrouterip\n");
 
     if(arp_entry != NULL)
     {
-	  int i;
-	  for(i=0;i<ETHER_ADDR_LEN;i++)
-	  {
-		e_hdr->ether_shost[i] = (uint8_t)arp_entry->mac[i];
-      }
-      /*memcpy(new_e_hdr, arp_entry->mac, ETHER_ADDR_LEN);*/
+      memcpy(e_hdr->ether_shost, arp_entry->mac, ETHER_ADDR_LEN);
       sr_send_packet(sr, packet, len, interface_p->name);
       free(arp_entry);
       fprintf(stderr, "mac in table, send ip\n");
@@ -254,7 +245,7 @@ fprintf(stderr,"before isrouterip\n");
 	fprintf(stderr,"before queuereq\n");
     struct sr_arpreq* a_req = sr_arpcache_queuereq(&(sr->cache), ip_hdr->ip_dst, packet, len, interface_p->name);
     fprintf(stderr,"after queuereq\n");
-/*    handle_arpreq(sr, a_req);*/
+    handle_arpreq(sr, a_req);
 
     unsigned int req_len = sizeof(sr_ethernet_hdr_t)+sizeof(sr_arp_hdr_t);
     uint8_t* arp_req = newArpPacket(arp_op_request, iface->addr, iface->ip, bc, interface_p->ip);

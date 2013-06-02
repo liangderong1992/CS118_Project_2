@@ -43,6 +43,8 @@ uint8_t* newERICMPPacket(uint8_t* packet, unsigned int len)
   temp_ip = ip_hdr->ip_src;
   ip_hdr->ip_src = ip_hdr->ip_dst;
   ip_hdr->ip_dst = temp_ip;
+  ip_hdr->ip_sum = 0;
+  ip_hdr->ip_sum = cksum(ip_hdr,20);
   uint8_t* icmp=packet+ sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
   uint8_t* type = icmp;
   *type = 0;
@@ -50,7 +52,7 @@ uint8_t* newERICMPPacket(uint8_t* packet, unsigned int len)
   *code = 0;
   uint16_t* sum = code + sizeof(uint8_t);
   *sum = 0;
-  *sum = cksum(icmp, len- sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
+  *sum = cksum(icmp, len- sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t));
   return packet;
 }
 

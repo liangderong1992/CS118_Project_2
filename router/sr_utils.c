@@ -44,9 +44,9 @@ uint8_t* newHUICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigne
   ip_hdr->ip_v = 4;
   ip_hdr->ip_hl = 5;
   ip_hdr->ip_tos=0;     /* type of service */
-  ip_hdr->ip_len=88;      /* total length */
-  ip_hdr->ip_id=0;     /* identification */
-  ip_hdr->ip_off=IP_DF;      /* fragment offset field */
+  ip_hdr->ip_len=htons(88);      /* total length */
+  ip_hdr->ip_id=htons(777);     /* identification */
+  ip_hdr->ip_off=htons(IP_DF);      /* fragment offset field */
   ip_hdr->ip_ttl = 64;     /* time to live */
   ip_hdr->ip_p = 1;     /* protocol */
   ip_hdr->ip_sum =0;      /* checksum */
@@ -54,13 +54,13 @@ uint8_t* newHUICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigne
   ip_hdr->ip_src =sip; 
   ip_hdr->ip_dst =tip;  /* source and dest address */
   ip_hdr->ip_sum =cksum(ip_hdr,20);
-  /*printf("checksum %d\n", ip_hdr->ip_sum);*/
+  /*printf("checksum %d\n", ntohs(ip_hdr->ip_sum));*/
 
   icmp_hdr->icmp_type=3;
   icmp_hdr->icmp_code=1;
   icmp_hdr->icmp_sum = 0;
   icmp_hdr->unused = 0;
-  icmp_hdr->next_mtu = 0;
+  icmp_hdr->next_mtu = htons(1500);
   memcpy(icmp_hdr->data, pkt+sizeof(sr_ethernet_hdr_t), ICMP_DATA_SIZE);
   icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
   /*printf("checksum %d\n", icmp_hdr->icmp_sum);*/

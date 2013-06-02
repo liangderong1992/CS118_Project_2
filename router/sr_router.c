@@ -150,12 +150,10 @@ void handleIpPacket(struct sr_instance* sr, uint8_t* packet,
 {
   sr_ethernet_hdr_t* e_hdr = (sr_ethernet_hdr_t*) packet;
   sr_ip_hdr_t* ip_hdr = (sr_ip_hdr_t*) (packet+sizeof(sr_ethernet_hdr_t));
-  if (ntohs(ip_hdr->ip_sum) != cksum((uint8_t*)(packet+sizeof(sr_ethernet_hdr_t)),20))
+  uint16_t copysum = ip_hdr->ip_sum;
+  ip_hdr->ip_sum = 0;
+  if (copysum != cksum((uint8_t*)(packet+sizeof(sr_ethernet_hdr_t)),20))
   {
-	fprintf(stderr,"%d\n",cksum((uint8_t*)(packet+sizeof(sr_ethernet_hdr_t)),20));
-	fprintf(stderr,"%d\n",ntohs(cksum((uint8_t*)(packet+sizeof(sr_ethernet_hdr_t)),20)));
-	fprintf(stderr,"%d\n",cksum((uint8_t*)(packet+sizeof(sr_ethernet_hdr_t)),len-sizeof(sr_ethernet_hdr_t)));
-	fprintf(stderr,"%d\n",ntohs(cksum((uint8_t*)(packet+sizeof(sr_ethernet_hdr_t)),len-sizeof(sr_ethernet_hdr_t))));
     fprintf(stderr, "Checksum doesn't match, but we keep going.\n");
 
   }

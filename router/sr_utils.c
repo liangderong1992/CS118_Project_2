@@ -70,7 +70,7 @@ uint8_t* newHUICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigne
 struct sr_if* matchPrefix(struct sr_instance* sr, uint32_t ip)
 {
   struct sr_rt* rt = sr->routing_table;
-  while(rt->next != NULL)
+  while(rt != NULL)
     {
       if(ip == htons(rt->dest.s_addr))
       {

@@ -218,7 +218,7 @@ struct sr_if* matchPrefix(struct sr_instance* sr, uint32_t ip)
     char *iface = NULL;
     while(rt != NULL)
     {
-        if((htons(rt->mask.s_addr) & ip) == htons((rt->mask.s_addr) & (rt->dest.s_addr)))
+        if((rt->mask.s_addr & ip) == (rt->mask.s_addr & rt->dest.s_addr))
         {
             long mask = rt->mask.s_addr;
             unsigned int c;
@@ -233,7 +233,7 @@ struct sr_if* matchPrefix(struct sr_instance* sr, uint32_t ip)
         rt = rt->next;
     }
     if(iface == NULL)
-      return NULL
+		return NULL;
     else
       return sr_get_interface(sr, iface);
 }

@@ -50,6 +50,9 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
                 uint8_t *taddr = e_hdr->ether_shost;
                 uint32_t tip = ip_hdr->ip_src;
                 struct sr_if *iface = matchPrefix(sr, tip);
+				if(iface==NULL)
+					{fprintf(stderr,"not found iface in the handle arpreq\n");
+				return;}
                 uint8_t *icmp_pkt = newHUICMPPacket(p->buf, iface->addr, iface->ip, taddr, tip);
                 sr_send_packet(sr, icmp_pkt, HUICMP_LENGTH, iface->name);
             }
@@ -58,6 +61,9 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
         else
         {
             struct sr_if *iface = matchPrefix(sr, req->ip);
+			if(iface==NULL)
+				{fprintf(stderr,"not found iface in the handle arpreq\n");
+			return;}
             uint8_t bc[ETHER_ADDR_LEN]  = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
             uint8_t *req_pkt = newArpPacket(1, iface->addr, iface->ip, bc, req->ip);
             unsigned int req_len = sizeof(sr_ethernet_hdr_t)+sizeof(sr_arp_hdr_t);

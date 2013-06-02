@@ -252,7 +252,7 @@ fprintf(stderr,"before isrouterip\n");
     {
     uint8_t bc[ETHER_ADDR_LEN]  = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 	fprintf(stderr,"before queuereq\n");
-    struct sr_arpreq* a_req = sr_arpcache_queuereq(&(sr->cache), interface_p->ip, packet, len, interface_p->name);
+    struct sr_arpreq* a_req = sr_arpcache_queuereq(&(sr->cache), ip_hdr->ip_dst, packet, len, interface_p->name);
     fprintf(stderr,"after queuereq\n");
 /*    handle_arpreq(sr, a_req);*/
 

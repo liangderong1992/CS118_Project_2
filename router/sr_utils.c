@@ -211,20 +211,31 @@ uint8_t* newTEICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigne
   return packet;
 }
 
-
 struct sr_if* matchPrefix(struct sr_instance* sr, uint32_t ip)
 {
-  struct sr_rt* rt = sr->routing_table;
-  while(rt != NULL)
+    struct sr_rt* rt = sr->routing_table;
+    unsigned int mask_length = 0;
+    char *iface = NULL;
+    while(rt != NULL)
     {
-      if(ip == htons(rt->dest.s_addr))
-      {
-        struct sr_if* r_if = sr_get_interface(sr, rt->interface);
-        return r_if;
-      }
-      rt = rt->next;
+        if((htons(rt->mask.s_addr) & ip) == htons((rt->mask.s_addr) & (rt->dest.s_addr)))
+        {
+            long mask = rt->mask.s_addr;
+            unsigned int c;
+            for(c = 0; mask; c++)
+                mask &= mask-1;
+            if(c > mask_length)
+            {
+                mask_length = c;
+                iface = rt->interface;
+            }
+        }
+        rt = rt->next;
     }
-  return NULL;
+    if(iface == NULL)
+      return NULL
+    else
+      return sr_get_interface(sr, iface);
 }
 
 uint16_t cksum (const void *_data, int len) {

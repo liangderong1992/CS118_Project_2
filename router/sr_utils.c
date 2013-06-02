@@ -31,39 +31,26 @@ uint8_t* newArpPacket(unsigned short op, unsigned char *sha, uint32_t sip, unsig
   return packet;
 }
 
-uint8_t* newERICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigned char *tha, uint32_t tip)
+uint8_t* newERICMPPacket(uint8_t* packet, unsigned int len)
 {
-  unsigned int len = sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t) + sizeof(sr_icmp_t3_hdr_t) + sizeof(uint32_t);
-  uint8_t* packet = malloc(len);
   sr_ethernet_hdr_t* e_hdr = (sr_ethernet_hdr_t*) packet;
   sr_ip_hdr_t* ip_hdr = (sr_ip_hdr_t*) (packet+ sizeof(sr_ethernet_hdr_t));
-  sr_icmp_t3_hdr_t* icmp_hdr = (sr_icmp_t3_hdr_t*) (packet+ sizeof(sr_ethernet_hdr_t)+ sizeof(sr_ip_hdr_t));
-  memcpy(e_hdr->ether_dhost, tha, ETHER_ADDR_LEN);
-  memcpy(e_hdr->ether_shost, sha, ETHER_ADDR_LEN);
-  e_hdr->ether_type = htons(ethertype_ip);
-  ip_hdr->ip_v = 4;
-  ip_hdr->ip_hl = 5;
-  ip_hdr->ip_tos=0;     /* type of service */
-  ip_hdr->ip_len=htons(56);      /* total length */
-  ip_hdr->ip_id=htons(777);     /* identification */
-  ip_hdr->ip_off=htons(IP_DF);      /* fragment offset field */
-  ip_hdr->ip_ttl = 64;     /* time to live */
-  ip_hdr->ip_p = 1;     /* protocol */
-  ip_hdr->ip_sum =0;      /* checksum */
-  /*printf("checksum %d\n", ip_hdr->ip_sum);*/
-  ip_hdr->ip_src =sip; 
-  ip_hdr->ip_dst =tip;  /* source and dest address */
-  ip_hdr->ip_sum =cksum(ip_hdr,20);
-  /*printf("checksum %d\n", ntohs(ip_hdr->ip_sum));*/
-
-  icmp_hdr->icmp_type=0;
-  icmp_hdr->icmp_code=0;
-  icmp_hdr->icmp_sum = 0;
-  icmp_hdr->unused = 0;
-  icmp_hdr->next_mtu = htons(1500);
-  memcpy(icmp_hdr->data, pkt+sizeof(sr_ethernet_hdr_t), ICMP_DATA_SIZE);
-  icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
-  /*printf("checksum %d\n", icmp_hdr->icmp_sum);*/
+  uint8_t  temp_mac[ETHER_ADDR_LEN];    /* source ethernet address */
+  memcpy(temp_mac, e_hdr->ether_dhost, ETHER_ADDR_LEN);
+  memcpy(e_hdr->ether_dhost, e_hdr->ether_shost, ETHER_ADDR_LEN);
+  memcpy(e_hdr->ether_shost, temp_mac, ETHER_ADDR_LEN);
+  uint32_t temp_ip;
+  temp_ip = ip_hdr->ip_src;
+  ip_hdr->ip_src = ip_hdr->ip_dst;
+  ip_hdr->ip_dst = temp_ip;
+  uint8_t* icmp=packet+ sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t);
+  uint8_t* type = icmp;
+  *type = 0;
+  uint8_t* code = type + sizeof(uint8_t);
+  *code = 0;
+  uint16_t* sum = code + sizeof(uint8_t);
+  *sum = 0;
+  *sum = cksum(icmp, len- sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));
   return packet;
 }
 

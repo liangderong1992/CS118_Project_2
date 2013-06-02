@@ -46,7 +46,11 @@ void print_hdr_icmp(uint8_t *buf);
 void print_hdr_arp(uint8_t *buf);
 uint8_t* newArpPacket(unsigned short op, unsigned char *sha, uint32_t sip, unsigned char *tha, uint32_t tip);
 struct sr_if* matchPrefix(struct sr_instance* sr, uint32_t ip);
+uint8_t* newERICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigned char *tha, uint32_t tip);
+uint8_t* newNUICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigned char *tha, uint32_t tip);
+uint8_t* newPUICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigned char *tha, uint32_t tip);
 uint8_t* newHUICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigned char *tha, uint32_t tip);
+uint8_t* newTEICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigned char *tha, uint32_t tip);
 /* prints all headers, starting from eth */
 void print_hdrs(uint8_t *buf, uint32_t length);
 

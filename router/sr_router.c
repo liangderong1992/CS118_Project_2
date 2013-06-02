@@ -150,8 +150,12 @@ void handleIpPacket(struct sr_instance* sr, uint8_t* packet,
 {
   sr_ethernet_hdr_t* e_hdr = (sr_ethernet_hdr_t*) packet;
   sr_ip_hdr_t* ip_hdr = (sr_ip_hdr_t*) (packet+sizeof(sr_ethernet_hdr_t));
-  if (ip_hdr->ip_sum != cksum((uint8_t*)(packet+sizeof(sr_ethernet_hdr_t)), len-sizeof(sr_ethernet_hdr_t)))
+  if (ntohs(ip_hdr->ip_sum) != cksum((uint8_t*)(packet+sizeof(sr_ethernet_hdr_t)),20))
   {
+	fprintf(stderr,"%d\n",cksum((uint8_t*)(packet+sizeof(sr_ethernet_hdr_t)),20));
+	fprintf(stderr,"%d\n",ntohs(cksum((uint8_t*)(packet+sizeof(sr_ethernet_hdr_t)),20)));
+	fprintf(stderr,"%d\n",cksum((uint8_t*)(packet+sizeof(sr_ethernet_hdr_t)),len-sizeof(sr_ethernet_hdr_t)));
+	fprintf(stderr,"%d\n",ntohs(cksum((uint8_t*)(packet+sizeof(sr_ethernet_hdr_t)),len-sizeof(sr_ethernet_hdr_t))));
     fprintf(stderr, "Checksum doesn't match, but we keep going.\n");
 
   }
@@ -166,7 +170,7 @@ void handleIpPacket(struct sr_instance* sr, uint8_t* packet,
     {
       /*sr_icmp_hdr_t* icmp_hdr = (sr_icmp_hdr_t*) (packet + sizeof(sr_ethernet_hdr_t) + sizeof(sr_ip_hdr_t));*/
 	  /*ToDo: get the icmp type and opcode and do whatever....*/
-		uint8_t * puICMP = newHUICMPPacket(packet,e_hdr->ether_dhost,htons(iface->ip),e_hdr->ether_shost,htons(ip_hdr->ip_src));
+		uint8_t * puICMP = newHUICMPPacket(packet,e_hdr->ether_dhost,iface->ip,e_hdr->ether_shost,ip_hdr->ip_src);
 		fprintf(stderr,"** -> here is the sending out huicmp(only for debuging) when receiving icmp\n");
 		print_hdrs(puICMP,102);
 		sr_send_packet(sr,puICMP,sizeof(sr_icmp_t3_hdr_t)+sizeof(sr_ip_hdr_t)+sizeof(sr_ethernet_hdr_t),iface->name);
@@ -174,7 +178,7 @@ void handleIpPacket(struct sr_instance* sr, uint8_t* packet,
     else /*here it is an IP packet, send an HU ICMP back*/
     {
 		fprintf(stderr,"here it is an IP packet, send an PU ICMP back\n");
-		uint8_t * puICMP = newHUICMPPacket(packet,e_hdr->ether_dhost,htons(iface->ip),e_hdr->ether_shost,htons(ip_hdr->ip_src));
+		uint8_t * puICMP = newHUICMPPacket(packet,e_hdr->ether_dhost,iface->ip,e_hdr->ether_shost,ip_hdr->ip_src);
 		/*ToDo: we have to use port unreachable ICMP packet*/
 		fprintf(stderr,"*** -> here is the sending out puicmp when receiving ip\n");
 		print_hdrs(puICMP,102);

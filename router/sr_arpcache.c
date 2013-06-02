@@ -47,13 +47,13 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
                         ipt->next->next = NULL;
                     }
                 }
-                uint8_t *taddr = &(e_hdr->ether_shost);
+                uint8_t *taddr = e_hdr->ether_shost;
                 uint32_t tip = ip_hdr->ip_src;
                 struct sr_if *iface = matchPrefix(sr, tip);
                 uint8_t *icmp_pkt = newHUICMPPacket(p->buf, iface->addr, iface->ip, taddr, tip);
                 sr_send_packet(sr, icmp_pkt, HUICMP_LENGTH, iface->name);
-            }            
-            sr_arpreq_destroy(sr, req);
+            }
+            sr_arpreq_destroy(&(sr->cache), req);
         }
         else
         {
@@ -77,11 +77,11 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
     struct sr_arpreq *req = sr->cache.requests;
     while(req != NULL)
     {
-        if(sr_arpcache_lookup(&(sr->cache), req))
+        if(sr_arpcache_lookup(&(sr->cache), req->ip))
         {
             struct sr_arpreq *temp = req;
             req = req->next;
-            sr_arpreq_destroy(sr, req);
+            sr_arpreq_destroy(&(sr->cache), temp);
         }
         else
         {

@@ -23,16 +23,28 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
     time_t now = time(NULL);
     if(difftime(now, req->sent) > 1.0)
     {
+        printf("Handling req with ip: %d.\n", req->ip);
         if(req->times_sent >= 5)
         {
+            printf("Already sent 5 times!\n");
             struct sr_packet *p = req->packets;
-            struct ip_list *ip = malloc(sizeof(struct ip_list));
+            struct ip_list *ip = NULL;
             packet_node: 
             while(p != NULL)
             {
-                sr_ethernet_hdr_t* e_hdr = (sr_ethernet_hdr_t*) p;
-                sr_ip_hdr_t* ip_hdr = (sr_ip_hdr_t*) (p+sizeof(sr_ethernet_hdr_t));
-                struct ip_list *ipt = ip;
+                sr_ethernet_hdr_t* e_hdr = (sr_ethernet_hdr_t*) p->buf;
+                sr_ip_hdr_t* ip_hdr = (sr_ip_hdr_t*) (p->buf+sizeof(sr_ethernet_hdr_t));
+                printf("Handling packet with ipsrc=%d ipdst=%d.\n", ip_hdr->ip_src, ip_hdr->ip_dst);
+                struct ip_list *ipt = NULL;
+                if(ip == NULL)
+                {
+                    ip = malloc(sizeof(struct ip_list));
+                    ip->ip = ip_hdr->ip_src;
+                    ip->next = NULL;
+                    ipt = NULL;
+                }
+                else
+                    ipt = ip;
                 while(ipt != NULL)
                 {
                     if(ipt->ip == ip_hdr->ip_src)
@@ -48,25 +60,34 @@ void handle_arpreq(struct sr_instance *sr, struct sr_arpreq *req)
                     }
                 }
                 uint8_t *taddr = e_hdr->ether_shost;
-                uint32_t tip = ip_hdr->ip_src;
+                uint32_t tip = ip_hdr->ip_dst;
+		struct sr_if* clientsideif = matchPrefix(sr,ip_hdr->ip_src);
                 struct sr_if *iface = matchPrefix(sr, tip);
-				if(iface==NULL)
-					{fprintf(stderr,"not found iface in the handle arpreq\n");
-				return;}
-                uint8_t *icmp_pkt = newHUICMPPacket(p->buf, iface->addr, iface->ip, taddr, tip);
-                sr_send_packet(sr, icmp_pkt, HUICMP_LENGTH, iface->name);
+                if(iface == NULL)
+                {
+                    fprintf(stderr, "matchPrefix returned null - could not match ip %d\n", tip);
+                    return;
+                }
+                uint8_t *icmp_pkt = newHUICMPPacket(p->buf, /*10.0.1.1*/clientsideif->addr, /*192.168.2.1*/iface->ip , taddr, ip_hdr->ip_src);
+                printf("Printing ICMP packet\n");
+                print_hdrs(icmp_pkt, HUICMP_LENGTH);
+                sr_send_packet(sr, icmp_pkt, HUICMP_LENGTH, clientsideif->name);
             }
             sr_arpreq_destroy(&(sr->cache), req);
         }
         else
         {
             struct sr_if *iface = matchPrefix(sr, req->ip);
-			if(iface==NULL)
-				{fprintf(stderr,"not found iface in the handle arpreq\n");
-			return;}
+            if(iface == NULL)
+            {
+                fprintf(stderr, "matchPrefix returned null - could not match ip %d\n", req->ip);
+                return;
+            }
             uint8_t bc[ETHER_ADDR_LEN]  = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
             uint8_t *req_pkt = newArpPacket(1, iface->addr, iface->ip, bc, req->ip);
             unsigned int req_len = sizeof(sr_ethernet_hdr_t)+sizeof(sr_arp_hdr_t);
+            printf("Printing ARP packet\n");
+            print_hdrs(req_pkt, req_len);
             sr_send_packet(sr, req_pkt, req_len, iface->name);
             req->sent = now;
             req->times_sent++;
@@ -83,8 +104,8 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
     struct sr_arpreq *req = sr->cache.requests;
     while(req != NULL)
     {
-            handle_arpreq(sr, req);
-            req = req->next;
+        handle_arpreq(sr, req);
+        req = req->next;
     }
 }
 

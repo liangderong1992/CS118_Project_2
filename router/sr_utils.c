@@ -50,7 +50,7 @@ uint8_t* newERICMPPacket(uint8_t* packet, unsigned int len)
   *type = 0;
   uint8_t* code = type + sizeof(uint8_t);
   *code = 0;
-  uint16_t* sum = code + sizeof(uint8_t);
+  uint16_t* sum = (uint16_t*)(code + sizeof(uint8_t));
   *sum = 0;
   *sum = cksum(icmp, len- sizeof(sr_ethernet_hdr_t) - sizeof(sr_ip_hdr_t));
   return packet;
@@ -75,11 +75,9 @@ uint8_t* newHUICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigne
   ip_hdr->ip_ttl = 64;     /* time to live */
   ip_hdr->ip_p = 1;     /* protocol */
   ip_hdr->ip_sum =0;      /* checksum */
-  /*printf("checksum %d\n", ip_hdr->ip_sum);*/
   ip_hdr->ip_src =sip; 
   ip_hdr->ip_dst =tip;  /* source and dest address */
   ip_hdr->ip_sum =cksum(ip_hdr,20);
-  /*printf("checksum %d\n", ntohs(ip_hdr->ip_sum));*/
 
   icmp_hdr->icmp_type=3;
   icmp_hdr->icmp_code=1;
@@ -88,7 +86,6 @@ uint8_t* newHUICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigne
   icmp_hdr->next_mtu = htons(1500);
   memcpy(icmp_hdr->data, pkt+sizeof(sr_ethernet_hdr_t), ICMP_DATA_SIZE);
   icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
-  /*printf("checksum %d\n", icmp_hdr->icmp_sum);*/
   return packet;
 }
 
@@ -111,11 +108,9 @@ uint8_t* newPUICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigne
   ip_hdr->ip_ttl = 64;     /* time to live */
   ip_hdr->ip_p = 1;     /* protocol */
   ip_hdr->ip_sum =0;      /* checksum */
-  /*printf("checksum %d\n", ip_hdr->ip_sum);*/
   ip_hdr->ip_src =sip; 
   ip_hdr->ip_dst =tip;  /* source and dest address */
   ip_hdr->ip_sum =cksum(ip_hdr,20);
-  /*printf("checksum %d\n", ntohs(ip_hdr->ip_sum));*/
 
   icmp_hdr->icmp_type=3;
   icmp_hdr->icmp_code=3;
@@ -124,7 +119,6 @@ uint8_t* newPUICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigne
   icmp_hdr->next_mtu = htons(1500);
   memcpy(icmp_hdr->data, pkt+sizeof(sr_ethernet_hdr_t), ICMP_DATA_SIZE);
   icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
-  /*printf("checksum %d\n", icmp_hdr->icmp_sum);*/
   return packet;
 }
 
@@ -147,20 +141,17 @@ uint8_t* newNUICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigne
   ip_hdr->ip_ttl = 64;     /* time to live */
   ip_hdr->ip_p = 1;     /* protocol */
   ip_hdr->ip_sum =0;      /* checksum */
-  /*printf("checksum %d\n", ip_hdr->ip_sum);*/
   ip_hdr->ip_src =sip; 
   ip_hdr->ip_dst =tip;  /* source and dest address */
   ip_hdr->ip_sum =cksum(ip_hdr,20);
-  /*printf("checksum %d\n", ntohs(ip_hdr->ip_sum));*/
 
   icmp_hdr->icmp_type=3;
-  icmp_hdr->icmp_code=6;
+  icmp_hdr->icmp_code=0;
   icmp_hdr->icmp_sum = 0;
   icmp_hdr->unused = 0;
   icmp_hdr->next_mtu = htons(1500);
   memcpy(icmp_hdr->data, pkt+sizeof(sr_ethernet_hdr_t), ICMP_DATA_SIZE);
   icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
-  /*printf("checksum %d\n", icmp_hdr->icmp_sum);*/
   return packet;
 }
 
@@ -183,11 +174,9 @@ uint8_t* newTEICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigne
   ip_hdr->ip_ttl = 64;     /* time to live */
   ip_hdr->ip_p = 1;     /* protocol */
   ip_hdr->ip_sum =0;      /* checksum */
-  /*printf("checksum %d\n", ip_hdr->ip_sum);*/
   ip_hdr->ip_src =sip; 
   ip_hdr->ip_dst =tip;  /* source and dest address */
   ip_hdr->ip_sum =cksum(ip_hdr,20);
-  /*printf("checksum %d\n", ntohs(ip_hdr->ip_sum));*/
 
   icmp_hdr->icmp_type=11;
   icmp_hdr->icmp_code=0;
@@ -196,7 +185,6 @@ uint8_t* newTEICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigne
   icmp_hdr->next_mtu = htons(1500);
   memcpy(icmp_hdr->data, pkt+sizeof(sr_ethernet_hdr_t), ICMP_DATA_SIZE);
   icmp_hdr->icmp_sum = cksum(icmp_hdr, sizeof(sr_icmp_t3_hdr_t));
-  /*printf("checksum %d\n", icmp_hdr->icmp_sum);*/
   return packet;
 }
 

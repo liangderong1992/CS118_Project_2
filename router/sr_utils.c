@@ -154,7 +154,7 @@ uint8_t* newNUICMPPacket(uint8_t* pkt, unsigned char *sha, uint32_t sip, unsigne
   /*printf("checksum %d\n", ntohs(ip_hdr->ip_sum));*/
 
   icmp_hdr->icmp_type=3;
-  icmp_hdr->icmp_code=6;
+  icmp_hdr->icmp_code=0;
   icmp_hdr->icmp_sum = 0;
   icmp_hdr->unused = 0;
   icmp_hdr->next_mtu = htons(1500);

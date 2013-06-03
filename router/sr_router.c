@@ -139,6 +139,9 @@ void handleArpPacket(struct sr_instance* sr, sr_arp_hdr_t* arp_hdr,
     if(iface->ip == arp_hdr->ar_tip)
     {
       struct sr_arpreq* req_pointer = sr_arpcache_insert(&sr->cache, arp_hdr->ar_sha, arp_hdr->ar_sip);
+	  fprintf(stderr,"$$$$$$ between cache print\n");
+	sr_arpcache_dump(&sr->cache);
+		fprintf(stderr,"$$$$$$ between cache print\n");
       if(req_pointer == NULL)
         printf("Received arp reply, no other request\n");
       else
@@ -179,8 +182,7 @@ void handleIpPacket(struct sr_instance* sr, uint8_t* packet,
   }
 	fprintf(stderr, "Checksum matches\n");
 
-  struct sr_rt* rt = sr->routing_table;
-  uint32_t gw;
+
 fprintf(stderr,"before isrouterip\n");
 
   if(isRouterIp(sr,ip_hdr->ip_dst))
@@ -240,6 +242,8 @@ fprintf(stderr,"before isrouterip\n");
         return;
       }*/
     }
+	ip_hdr->ip_sum = 0;
+	ip_hdr->ip_sum = cksum(ip_hdr,20);
 
 /*routhing entry found*/
     struct sr_arpentry* arp_entry;
@@ -248,11 +252,11 @@ fprintf(stderr,"before isrouterip\n");
     arp_entry = sr_arpcache_lookup(&sr->cache, receiverifip);
 	fprintf(stderr,"after lookup\n");
 
-	int i;
+	/*int i;
 	for(i=0;i<ETHER_ADDR_LEN;i++)
 	{
 		e_hdr->ether_dhost[i] = (uint8_t)interface_p->addr[i];
-	}
+	}*/
     fprintf(stderr, "prepare to send arp req\n");
     
 
@@ -270,21 +274,18 @@ fprintf(stderr,"before isrouterip\n");
     uint8_t bc[ETHER_ADDR_LEN]  = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 	fprintf(stderr,"before queuereq\n");
     struct sr_arpreq* a_req = sr_arpcache_queuereq(&(sr->cache), ip_hdr->ip_dst, packet, len, interface_p->name);
-fprintf(stderr,"$$$$$$ between cache print\n");
-sr_arpcache_dump(&sr->cache);
-	fprintf(stderr,"$$$$$$ between cache print\n");
     fprintf(stderr,"after queuereq\n");
     handle_arpreq(sr, a_req);
 
-    unsigned int req_len = sizeof(sr_ethernet_hdr_t)+sizeof(sr_arp_hdr_t);
+    /*unsigned int req_len = sizeof(sr_ethernet_hdr_t)+sizeof(sr_arp_hdr_t);
 	uint32_t next_hop_ip = get_gw(sr,interface_p->name);
 	if(next_hop_ip == 0)
 		fprintf(stderr,"cannot fond gw in the rt\n");
     uint8_t* arp_req = newArpPacket(arp_op_request, interface_p->addr, interface_p->ip, bc, next_hop_ip);
     fprintf(stderr,"*** -> sending the arp req below\n");
     sr_send_packet(sr, arp_req, sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t), interface_p->name);
-    /*uint8_t* huicmp = newHUICMPPacket(packet, iface->addr, iface->ip, interface_p->addr, interface_p->ip);*/
-    print_hdrs(arp_req, sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
+    uint8_t* huicmp = newHUICMPPacket(packet, iface->addr, iface->ip, interface_p->addr, interface_p->ip);
+    print_hdrs(arp_req, sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));*/
 
     }
   }

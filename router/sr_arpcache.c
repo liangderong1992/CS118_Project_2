@@ -104,9 +104,11 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
     struct sr_arpreq *req = sr->cache.requests;
     while(req != NULL)
     {
+		fprintf(stderr,"%d ",req->ip);
         handle_arpreq(sr, req);
         req = req->next;
     }
+	fprintf(stderr,"after the sweep\n");
 }
 
 /* You should not need to touch the rest of this code. */

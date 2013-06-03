@@ -95,6 +95,23 @@ int isRouterIp(struct sr_instance* sr,uint32_t dstip)
 	return 0;
 }
 
+uint32_t get_gw(struct sr_instance* sr,char * name)
+{
+	struct sr_rt* rt_p = sr->routing_table;
+	for(;rt_p!=NULL;rt_p = rt_p->next)
+	{
+		int i;
+		for(i=0;i<sr_IFACE_NAMELEN;i++)
+		{
+			if((*(name+i)) != (*((rt_p->interface)+i)))
+				break;
+		}
+		if(i == sr_IFACE_NAMELEN)
+			return rt_p->gw.s_addr;
+	}
+	return 0;
+}
+
 void handleArpPacket(struct sr_instance* sr, sr_arp_hdr_t* arp_hdr, 
                         unsigned int len, struct sr_if *iface)
 {
@@ -182,7 +199,7 @@ fprintf(stderr,"before isrouterip\n");
     else /*here it is an IP packet, send an HU ICMP back*/
     {
 		fprintf(stderr,"here it is an IP packet, send an PU ICMP back\n");
-		uint8_t * puICMP = newHUICMPPacket(packet,e_hdr->ether_dhost,iface->ip,e_hdr->ether_shost,ip_hdr->ip_src);
+		uint8_t * puICMP = newPUICMPPacket(packet,e_hdr->ether_dhost,iface->ip,e_hdr->ether_shost,ip_hdr->ip_src);
 		/*ToDo: we have to use port unreachable ICMP packet*/
 		fprintf(stderr,"*** -> here is the sending out puicmp when receiving ip\n");
 		print_hdrs(puICMP,102);
@@ -226,9 +243,9 @@ fprintf(stderr,"before isrouterip\n");
 
 /*routhing entry found*/
     struct sr_arpentry* arp_entry;
-    uint32_t next_hop_ip = ntohl(iface->ip);
+    uint32_t receiverifip = ntohl(iface->ip);
 	fprintf(stderr,"before lookup\n");
-    arp_entry = sr_arpcache_lookup(&sr->cache, next_hop_ip);
+    arp_entry = sr_arpcache_lookup(&sr->cache, receiverifip);
 	fprintf(stderr,"after lookup\n");
 
 	int i;
@@ -241,25 +258,34 @@ fprintf(stderr,"before isrouterip\n");
 
     if(arp_entry != NULL)
     {
-      memcpy(e_hdr, arp_entry->mac, ETHER_ADDR_LEN);
+      memcpy(e_hdr->ether_dhost, arp_entry->mac, ETHER_ADDR_LEN);
+	  memcpy(e_hdr->ether_shost, interface_p->addr, ETHER_ADDR_LEN);
       sr_send_packet(sr, packet, len, interface_p->name);
       free(arp_entry);
       fprintf(stderr, "mac in table, send ip\n");
     }
     else
     {
+	fprintf(stderr, "mac not in table, want to send arp req\n");
     uint8_t bc[ETHER_ADDR_LEN]  = {0xFF,0xFF,0xFF,0xFF,0xFF,0xFF};
 	fprintf(stderr,"before queuereq\n");
     struct sr_arpreq* a_req = sr_arpcache_queuereq(&(sr->cache), ip_hdr->ip_dst, packet, len, interface_p->name);
+fprintf(stderr,"$$$$$$ between cache print\n");
+sr_arpcache_dump(&sr->cache);
+	fprintf(stderr,"$$$$$$ between cache print\n");
     fprintf(stderr,"after queuereq\n");
-/*    handle_arpreq(sr, a_req);*/
+    handle_arpreq(sr, a_req);
 
     unsigned int req_len = sizeof(sr_ethernet_hdr_t)+sizeof(sr_arp_hdr_t);
-    uint8_t* arp_req = newArpPacket(arp_op_request, iface->addr, iface->ip, bc, interface_p->ip);
-    uint8_t* huicmp = newHUICMPPacket(packet, iface->addr, iface->ip, interface_p->addr, interface_p->ip);
-    /*print_hdrs(huicmp, 102);*/
+	uint32_t next_hop_ip = get_gw(sr,interface_p->name);
+	if(next_hop_ip == 0)
+		fprintf(stderr,"cannot fond gw in the rt\n");
+    uint8_t* arp_req = newArpPacket(arp_op_request, interface_p->addr, interface_p->ip, bc, next_hop_ip);
+    fprintf(stderr,"*** -> sending the arp req below\n");
+    sr_send_packet(sr, arp_req, sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t), interface_p->name);
+    /*uint8_t* huicmp = newHUICMPPacket(packet, iface->addr, iface->ip, interface_p->addr, interface_p->ip);*/
+    print_hdrs(arp_req, sizeof(sr_ethernet_hdr_t) + sizeof(sr_arp_hdr_t));
 
-    fprintf(stderr, "mac not in table, send arp req\n");
     }
   }
 }

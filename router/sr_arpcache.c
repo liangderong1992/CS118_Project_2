@@ -83,17 +83,8 @@ void sr_arpcache_sweepreqs(struct sr_instance *sr) {
     struct sr_arpreq *req = sr->cache.requests;
     while(req != NULL)
     {
-        if(sr_arpcache_lookup(&(sr->cache), req->ip))
-        {
-            struct sr_arpreq *temp = req;
-            req = req->next;
-            sr_arpreq_destroy(&(sr->cache), temp);
-        }
-        else
-        {
             handle_arpreq(sr, req);
             req = req->next;
-        }
     }
 }
 

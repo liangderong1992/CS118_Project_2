@@ -1,5 +1,5 @@
 Team Members:
-David Liang - 404217758
+Derong Liang - 404217758
 Jun Ma - 704149452
 Wayne Hong - 803821209
 
@@ -13,15 +13,15 @@ sr_router.c
 ===============================================================================
 
 isAddrEqual - Jun
-isRouterIp - David
-get_gw - David
-handleArpPacket - Jun/David
-handleIpPacket - Jun/David
-sr_handlepacket - Jun/David
+isRouterIp - Derong
+get_gw - Derong
+handleArpPacket - Jun/Derong
+handleIpPacket - Jun/Derong
+sr_handlepacket - Jun/Derong
 
 sr_utils.c
 ===============================================================================
 
 newArpPacket - Jun
 newERICMPPacket newHUICMPPacket newPUICMPPacket newNUICMPPacket newTEICMPPacket - Jun
-matchPrefix - David/Wayne
+matchPrefix - Derong/Wayne

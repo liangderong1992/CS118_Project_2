@@ -20,8 +20,11 @@ This function get called when the router received an IP packet.It operates diffe
 If the destination IP is one of the router's interface IP, then it checks if the IP protocol is ICMP or not.
 
 If IP protocol is ICMP, it assumes that it would be an echo request, then it generates an echo reply ICMP packet and sends this echo reply packet through the interface which the packet comes from.
+If IP protocol is not ICMP, then it will send out a port unreachable icmp message to the sender.
 
-If IP protocol is IP, it reduce TTL by 1, recalculate the check sum and checks if the TTL is 0. If the TTL is 0, it sends a time exceeded ICMP packet to the sender.Then it would try to match the longest prefix of the destination IP in the routing table. 
+If the destination IP doesn't belong's to the router,
+it reduce TTL by 1, recalculate the check sum and checks if the TTL is 0. If the TTL is 0, it sends a time exceeded ICMP packet to the sender.Then it would try to match the longest prefix of the destination IP in the routing table. 
+
 If the routing entry is not found, it would send back the sender a network unreachable ICMP packet.
 If the routing entry is found, it would then check if the next hop's MAC address is in the cache, if yes, then routes that packet to next hop.If the cache doesn't exist, it would send out a broadcast ARP request for next hop's IP, and puts that packet to the ARP request's packet queue. 
 
